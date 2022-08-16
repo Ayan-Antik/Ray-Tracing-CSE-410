@@ -1,21 +1,12 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<bits/stdc++.h>
-#include <windows.h>
-#include <GL/glut.h>
-#include <fstream>
-#define pi (2*acos(0.0))
 #include "1705036_classes.h"
 
-using namespace std;
 int drawgrid;
 int drawaxes;
 double angle;
 
-extern vector <Object> objects;
-extern vector <PointLight> pointLights;
-extern vector <SpotLight> spotLights;
+vector <Object*> objects;
+vector <PointLight> pointLights;
+vector <SpotLight> spotLights;
 
 Point pos;
 Point u;
@@ -229,6 +220,7 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 	}
 }
 
+double cameraAngle;
 
 
 void display(){
@@ -247,13 +239,12 @@ void display(){
 	//initialize the matrix
 	glLoadIdentity();
 
-	//now give three info
 	//1. where is the camera (viewer)?
 	//2. where is the camera looking?
 	//3. Which direction is the camera's UP direction?
 
 	//gluLookAt(100,100,100,	0,0,0,	0,0,1);
-	//gluLookAt(200*cos(cameraAngle), 200*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
+//	gluLookAt(200*cos(cameraAngle), 200*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
 	gluLookAt(pos.x, pos.y, pos.z,
            pos.x+l.x ,pos.y+l.y, pos.z+l.z,
            u.x, u.y, u.z);
@@ -271,8 +262,10 @@ void display(){
 	drawAxes();
 	drawGrid();
 
-	drawSphere(30,24,20);
-
+//	drawSphere(30,24,20);
+    for(int i=0;i<objects.size(); i++){
+        objects[i]->draw();
+    }
 
 
 
@@ -291,6 +284,7 @@ void init(){
 	drawgrid=0;
 	drawaxes=1;
 	angle=0;
+	cameraAngle=1.0;
 
     pos.x = 80, pos.y = 80, pos.z = 20;
     u.x = 0, u.y = 0, u.z = 1;
@@ -316,15 +310,166 @@ void init(){
 	//far distance
 }
 //goto function: ctrl-shift-g
+int recursion_level, pixels, object_count;
+string type_of_object;
+
 void loadData(){
     ifstream ifile("D:\\BUET\\L4T1\\CSE 410 Computer Graphics Sessional\\Assignment 3\\Ray Tracing\\scene.txt");
     if(ifile.is_open()){
-        cout << "File is open";
-        string line;
-        while (getline(ifile, line))
+//        cout << "File is open";
+//        string line;
+        while (!ifile.eof())
         {
-            cout << line << endl;
+            ifile >> recursion_level;
+            cout << recursion_level << endl;
+
+            ifile >> pixels;
+            cout << pixels << endl;
+
+            ifile >> object_count;
+            cout << object_count << endl;
+
+            for(int i = 0; i< object_count; i++){
+                ifile >> type_of_object;
+                if(type_of_object == "sphere"){
+                    cout << "sphere " << i << endl;
+                    Point center;
+                    double radius, a, d, sp, rc;
+                    Color color;
+                    int shine;
+                    ifile >> center.x >> center.y >> center.z;
+//                    center.print();
+                    ifile >> radius;
+//                    cout << radius << endl;
+                    ifile >> color.r >> color.g >> color.b;
+//                    color.print();
+                    ifile >> a >> d >> sp >> rc;
+                    ifile >> shine;
+//                    ifile >>
+                    Object *temp;
+                    temp = new Sphere(center, radius);
+                    temp->setColor(color);
+                    temp->setCoEfficients(a, d, sp, rc);
+
+                    temp->setShine(shine);
+                    temp->draw();
+//                    objects.push_back(temp);
+
+
+                }
+
+                else if(type_of_object == "triangle"){
+                    cout << "triangle " << i << endl;
+
+                    Point p1, p2, p3;
+                    Color color;
+                    double a, d, sp, rc;
+                    int shine;
+
+                    ifile >> p1.x >> p1.y >> p1.z;
+                    ifile >> p2.x >> p2.y >> p2.z;
+                    ifile >> p3.x >> p3.y >> p3.z;
+                    ifile >> color.r >> color.g >> color.b;
+                    ifile >> a >> d >> sp >> rc;
+                    ifile >> shine;
+
+                    Object *temp;
+                    temp = new Triangle(p1, p2, p3);
+                    temp->setColor(color);
+                    temp->setCoEfficients(a, d, sp, rc);
+                    temp->setShine(shine);
+//                    objects.push_back(temp);
+                    temp->draw();
+
+//                    temp->print();
+//                    break;
+                }
+
+                else if(type_of_object == "general"){
+                    cout << "general " << i << endl;
+                    double A, B, C, D, E, F, G, H, I ,J;
+                    Color color;
+                    Point point;
+                    double length, width, height;
+                    double a, d, sp, rc;
+                    int shine;
+
+                    ifile >> A >> B >> C >> D >> E >> F >> G >> H >> I >> J;
+                    ifile >> point.x >> point.y >> point.z >> length >> width >> height;
+                    ifile >> color.r >> color.g >> color.b;
+                    ifile >> a >> d >> sp >> rc;
+                    ifile >> shine;
+                    Object *temp;
+                    temp = new General(A, B, C, D, E, F, G, H, I ,J);
+                    temp->setColor(color);
+                    temp->setCoEfficients(a, d, sp, rc);
+                    temp->setShine(shine);
+//                    temp->print();
+//                    objects.push_back(temp);
+//                    break;
+
+                }
+
+                else{
+                    cout << "Not one of the defined objects?!?\n";
+                }
+
+            }
+
+            int point_light_count;
+            ifile >> point_light_count;
+
+            for(int i = 0; i<point_light_count; i++){
+                cout << "point light " << i << endl;
+                Point light_position;
+                Color color;
+
+                ifile >> light_position.x >> light_position.y >> light_position.z;
+                ifile >> color.r >> color.g >> color.b;
+
+                PointLight pl(light_position, color);
+//                pl.print();
+                pointLights.push_back(pl);
+
+
+            }
+
+            int spotlight_count;
+            ifile >> spotlight_count;
+            for(int i = 0; i<spotlight_count; i++){
+                cout << "spot light " << i << endl;
+                Point light_position;
+                Point light_dir;
+                Color color;
+                double angle;
+
+                ifile >> light_position.x >> light_position.y >> light_position.z;
+                ifile >> color.r >> color.g >> color.b;
+
+                PointLight pl(light_position, color);
+                ifile >> light_dir.x >> light_dir.y >> light_dir.z;
+                ifile >> angle;
+                SpotLight sl(pl, light_dir, angle);
+//                sl.print();
+                spotLights.push_back(sl);
+            }
+
+            break;
+
+
         }
+
+        Object *temp = new Floor(1000, 20);
+//        temp->setColor()
+        objects.push_back(temp);
+//        for(int i=0;i<pointLights.size(); i++){
+//            pointLights[i].print();
+//        }
+//        for(int i=0;i<objects.size(); i++){
+//            objects[i]->print();
+//        }
+
+
     }
 
     else{
@@ -338,11 +483,11 @@ int main(int argc, char **argv){
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 
-	glutCreateWindow("Cube Sphere Program");
+	glutCreateWindow("Ray Tracing");
 
 	init();
-    loadData();
 
+    loadData();
 	glEnable(GL_DEPTH_TEST);	//enable Depth Testing
 
 	glutDisplayFunc(display);	//display callback function
@@ -350,7 +495,7 @@ int main(int argc, char **argv){
 
 	glutKeyboardFunc(keyboardListener);
 	glutSpecialFunc(specialKeyListener);
-//	glutMouseFunc(mouseListener);
+	glutMouseFunc(mouseListener);
 
 	glutMainLoop();		//The main loop of OpenGL
 
