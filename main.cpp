@@ -8,10 +8,7 @@ double angle;
 //vector <PointLight> pointLights = pointLights;
 //vector <SpotLight> spotLights = spotLights;
 
-Point eye;
-Point u;
-Point r;
-Point l;
+
 
 int windowHeight = 500;
 int windowWidth = 500;
@@ -242,7 +239,7 @@ void capture(){
         }
     }
 
-    double planeDistance = (windowHeight/2.0)/tan(viewAngle/2.0*(pi/180));
+    double planeDistance = (windowHeight/2.0)/tan((viewAngle*(pi/180))/2.0);
 
     Point topLeft = eye + (l*planeDistance) - (r*(windowWidth/2)) + (u*(windowHeight/2));
 //    topLeft.print();
@@ -268,7 +265,7 @@ void capture(){
             for(int k = 0; k<objects.size(); k++){
 //                logfile << "K: " << k << endl;
                 t = objects[k]->intersect(ray, color, 0);
-                if(t!=-1.0)logfile << "t: " << t << endl;
+//                if(t!=-1.0)logfile << "t: " << t << endl;
                 if(t>0 && t<tMin){
                     tMin = t;
                     nearest = k;
@@ -280,7 +277,7 @@ void capture(){
                 double t2 = objects[nearest]->intersect(ray, color, 1);
 //                color->print();
                 color->clip();
-                image.set_pixel(i+1, j+1, round(color->r * 255), round(color->g * 255), round(color->b * 255));
+                image.set_pixel(i, j, round(color->r * 255), round(color->g * 255), round(color->b * 255));
             }
         }
 
@@ -304,31 +301,44 @@ void keyboardListener(unsigned char key, int x,int y){
 
         case '1':
 
-            l = l*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
-            r = r*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
+//            l = l*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
+//            r = r*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
+
+            r = r*cos(pi/180)+(u.cross_mult(r))*sin(pi/180);
+		    l = l*cos(pi/180)+(u.cross_mult(l))*sin(pi/180);
+
 			break;
 
         case '2':
-            l = l*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
-            r = r*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
+//            l = l*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
+//            r = r*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
+            r = r*cos(-pi/180)+(u.cross_mult(r))*sin(-pi/180);
+		    l = l*cos(-pi/180)+(u.cross_mult(l))*sin(-pi/180);
+
 			break;
 
         case '3':
-            l = l*(cos(2*pi/180)) + r.cross_mult(l)*(sin(2*pi/180));
-            u = u*(cos(2*pi/180)) + r.cross_mult(u)*(sin(2*pi/180));
+//            l = l*(cos(2*pi/180)) + r.cross_mult(l)*(sin(2*pi/180));
+//            u = u*(cos(2*pi/180)) + r.cross_mult(u)*(sin(2*pi/180));
+            l = l*cos(pi/180)+(r.cross_mult(l))*sin(pi/180);
+		    u = u*cos(pi/180)+(r.cross_mult(u))*sin(pi/180);
 			break;
+
         case '4':
-            l = l*(cos(-2*pi/180)) + r.cross_mult(l)*(sin(-2*pi/180));
-            u = u*(cos(-2*pi/180)) + r.cross_mult(u)*(sin(-2*pi/180));
+//            l = l*(cos(-2*pi/180)) + r.cross_mult(l)*(sin(-2*pi/180));
+//            u = u*(cos(-2*pi/180)) + r.cross_mult(u)*(sin(-2*pi/180));
+
+            l = l*cos(-pi/180)+(r.cross_mult(l))*sin(-pi/180);
+		    u = u*cos(-pi/180)+(r.cross_mult(u))*sin(-pi/180);
 			break;
         case '5':
-            r = r*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
-            u = u*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
+            u = u*(cos(pi/180)) + l.cross_mult(u)*(sin(pi/180));
+            r = r*(cos(pi/180)) + l.cross_mult(r)*(sin(pi/180));
 			break;
 
           case '6':
-            r = r*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
-            u = u*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
+            u = u*(cos(-pi/180)) + l.cross_mult(u)*(sin(-pi/180));
+            r = r*(cos(-pi/180)) + l.cross_mult(r)*(sin(-pi/180));
 			break;
 
          case '8':
@@ -352,29 +362,39 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_UP:		// up arrow key
-            eye.x -= 2.0;
-            eye.y -= 2.0;
+//            eye.x -= 2.0;
+//            eye.y -= 2.0;
+            eye.x += l.x*2;
+            eye.y += l.y*2;
+            eye.z += l.z*2;
 			break;
 		case GLUT_KEY_DOWN:		//down arrow key
-            eye.x += 2.0;
-            eye.y += 2.0;
+            eye.x -= l.x*2;
+            eye.y -= l.y*2;
+            eye.z -= l.z*2;
 			break;
 
 		case GLUT_KEY_RIGHT:
-            eye.x -= 2.0;
-            eye.y += 2.0;
+            eye.x += r.x*2;
+            eye.y += r.y*2;
+            eye.z += r.z*2;
 			break;
 		case GLUT_KEY_LEFT:
-			eye.x += 2.0;
-            eye.y -= 2.0;
+			eye.x -= r.x*2;
+            eye.y -= r.y*2;
+            eye.z -= r.z*2;
 
 			break;
 
 		case GLUT_KEY_PAGE_UP:
-			eye.z += 3.0;
+			eye.x += u.x*2;
+            eye.y += u.y*2;
+            eye.z += u.z*2;
 			break;
 		case GLUT_KEY_PAGE_DOWN:
-			eye.z -= 3.0;
+			eye.x -= u.x*2;
+            eye.y -= u.y*2;
+            eye.z -= u.z*2;
 			break;
 
 		case GLUT_KEY_INSERT:
@@ -456,11 +476,17 @@ void display(){
 	drawAxes();
 	drawGrid();
 
-//	drawSphere(30,24,20);
     for(int i=0;i<objects.size(); i++){
         objects[i]->draw();
     }
 
+    for(int i=0;i<pointLights.size(); i++){
+        pointLights[i].draw();
+    }
+
+    for(int i=0;i<spotLights.size(); i++){
+        spotLights[i].draw();
+    }
 
 
 	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
@@ -476,7 +502,7 @@ void animate(){
 void init(){
 	//codes for initialization
 	drawgrid=0;
-	drawaxes=1;
+	drawaxes=0;
 	angle=0;
 	cameraAngle=1.0;
 
@@ -509,7 +535,7 @@ void init(){
 
 int main(int argc, char **argv){
 	glutInit(&argc,argv);
-	glutInitWindowSize(windowHeight, windowWidth);
+	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 

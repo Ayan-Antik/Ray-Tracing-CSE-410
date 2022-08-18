@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1660773953 source:d:\buet\l4t1\cse 410 computer graphics sessional\assignment 3\ray tracing\main.cpp
+1660860242 source:d:\buet\l4t1\cse 410 computer graphics sessional\assignment 3\ray tracing\main.cpp
 	"1705036_classes.h"
 
 1632060799 c:\program files\codeblocks\mingw\x86_64-w64-mingw32\include\gl\glut.h
@@ -895,7 +895,7 @@
 1526093416 c:\program files\codeblocks\mingw\x86_64-w64-mingw32\include\math.h
 	<crtdefs.h>
 
-1660773828 d:\buet\l4t1\cse 410 computer graphics sessional\assignment 3\ray tracing\1705036_classes.h
+1660864298 d:\buet\l4t1\cse 410 computer graphics sessional\assignment 3\ray tracing\1705036_classes.h
 	<bits/stdc++.h>
 	<stdio.h>
 	<stdlib.h>
