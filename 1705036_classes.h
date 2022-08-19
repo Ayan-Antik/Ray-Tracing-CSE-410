@@ -13,7 +13,7 @@
 using namespace std;
 
 ofstream logfile("D:\\BUET\\L4T1\\CSE 410 Computer Graphics Sessional\\Assignment 3\\Ray Tracing\\log.txt");
-
+int recursion_level;
 class Point
 {
 public:
@@ -175,7 +175,7 @@ public:
 
       void draw(){
 
-        glPointSize(3);
+        glPointSize(5);
         glBegin(GL_POINTS);
         glColor3f(point_light.color.r, point_light.color.g, point_light.color.b);
         glVertex3f(point_light.light_pos.x, point_light.light_pos.y, point_light.light_pos.z);
@@ -257,7 +257,10 @@ public:
     virtual double intersect(Ray ray, Color *color, int level){
         return -1.0;
     }
+    virtual Ray getNormal(Point p, Ray r){
 
+        return Ray(p, r.dir);
+    }
     virtual Color getColorAt(Point p){
         return Color(this->color.r, this->color.g, this->color.b);
     }
@@ -329,22 +332,21 @@ public:
 
     double intersect(Ray ray, Color *color, int level){
 
-//        ray->start.print();
-//        if(level == 1)cout << "HEMLO\n";
+
         ray.start = ray.start - this->center;
-//        cout << "In intersect of sphere" << endl;
+
         double t, t1, t2;
-//        ray->start.print();
+
         double ld = (ray.start*(-1.0)) * ray.dir.normalize();
-//        cout << "Here\n" << "ld: " << ld << endl;
+
         if(ld < 0)return -1.0;
         double d_sq = (ray.start*ray.start) - ld*ld;
 
         if(d_sq > length*length)return -1.0;
         double l_sq = length*length - d_sq;
-//        t1 = ld + sqrt(l_sq);
+        t1 = ld + sqrt(l_sq);
         t2 = ld - sqrt(l_sq);
-        t = t2;
+        t = min(t1, t2);
         if(level==0)return t;
 
         if(t<0)return -1.0;
@@ -352,15 +354,58 @@ public:
         ///RTX ON
         Point intersectionPoint = (ray.start+ this->center) + (ray.dir)*t;
         Color intersectionPointColor = getColorAt(intersectionPoint);
-//        intersectionPointColor.print();
         color->r = intersectionPointColor.r*coEfficients[0]; ///ambient
         color->g = intersectionPointColor.g*coEfficients[0]; ///ambient
         color->b = intersectionPointColor.b*coEfficients[0]; ///ambient
 
-        Ray N = Ray(intersectionPoint, intersectionPoint - this->center); ///Normal Ray
+        Ray N(intersectionPoint, intersectionPoint - this->center);
+        for(int i = 0; i<pointLights.size()+spotLights.size(); i++){
 
-        for(int i = 0; i<pointLights.size(); i++){
-            Ray L = Ray(pointLights[i].light_pos, intersectionPoint - (pointLights[i].light_pos)); ///Incident Ray
+            Color LightColor;
+            Ray L = Ray(Point(-10, -10, -10), Point(-5, -5, -5));
+
+
+            ///spotlight
+            if(i>=pointLights.size()){
+
+                int idx = i - pointLights.size();
+
+                PointLight PL = spotLights[idx].point_light;
+                L.start = PL.light_pos;
+                L.dir = intersectionPoint - PL.light_pos;
+                L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
+                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
+                double angle = acos(L.dir*spotLights[idx].light_direction);
+//                logfile << "Angle in radian? " << angle << endl;
+                angle = angle * (180/pi); ///making radian into degree
+//                logfile << "Angle in degree? " << angle << endl;
+                if(angle > spotLights[idx].cutoff_angle){
+//                    logfile << "Angle: " << angle << endl;
+                    continue;
+                }
+//                logfile << "Valid angle: " << angle << endl;
+                LightColor.r = PL.color.r;
+                LightColor.g = PL.color.g;
+                LightColor.b = PL.color.b;
+
+
+
+
+            }
+
+            ///pointlight
+            else {
+                L.start = pointLights[i].light_pos;///Incident Ray
+                L.dir = intersectionPoint - (pointLights[i].light_pos);
+                L.dir = L.dir.normalize();
+
+                LightColor.r = pointLights[i].color.r;
+                LightColor.g = pointLights[i].color.g;
+                LightColor.b = pointLights[i].color.b;
+
+
+            }
+
             Ray R = Ray(intersectionPoint, L.dir - N.dir*(L.dir*N.dir)*2);
 
             ///shadow check
@@ -386,49 +431,51 @@ public:
                 continue;
             }
 
-//            logfile << "L dir: " << L.dir << endl;
-//            Point Ln = L.dir.negate_();
-//            logfile << "L dir neg: " << Ln << endl;
-//            logfile << "N dir: " << N.dir << endl;
             double lambert = (L.dir*(-1.0))*N.dir;
-//            logfile << "Lambert lambert what a prick: " << lambert << endl;
-//            if(lambert > 0.0)logfile << "Lambert lambert what a prick: " << lambert << endl;
-            color->r += pointLights[i].color.r*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.r;
-            color->g += pointLights[i].color.g*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.g;
-            color->b += pointLights[i].color.b*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.b;
+            color->r += LightColor.r*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.b;
 
             double phongValue = max(0.0, (ray.dir.negate_())*(R.dir));
 //            if(phongValue > 0.0)logfile << "Phonging: " << phongValue<< endl;
-            color->r += pointLights[i].color.r*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.r;
-            color->g += pointLights[i].color.g*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.g;
-            color->b += pointLights[i].color.b*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.b;
+            color->r += LightColor.r*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.b;
+
+        }
+
+        if(level >=recursion_level)return t;
+        ///recursive reflection .-.
+
+        Ray reflected = Ray(intersectionPoint, ray.dir - N.dir*(ray.dir*N.dir)*2);
+        reflected.start = reflected.start + reflected.dir*epsilon;
+
+        int nearest = -INF;
+        double t_ref,tmin_ref = INF;
+
+        for(int k = 0; k<objects.size(); k++){
+
+            t_ref = objects[k]->intersect(reflected, color, 0);
+            if(t_ref > 0 && t_ref<tmin_ref){
+                tmin_ref = t_ref;
+                nearest = k;
+            }
+
+        }
+
+        if(nearest != -INF){
+            Color *reflectionColor = new Color();
+            tmin_ref = objects[nearest]->intersect(reflected, reflectionColor, level+1);
+
+            color->r += reflectionColor->r*this->coEfficients[3];
+            color->g += reflectionColor->g*this->coEfficients[3];
+            color->b += reflectionColor->b*this->coEfficients[3];
 
         }
 
 
-
         return t;
-    {
 
-
-//        double a = 1;
-//        double b = (ray.start*ray.dir)*2;
-//        double c = (ray.start*ray.start) - (length * length);
-//
-//        double t1, t2;
-//        double d = (b*b - 4*a*c);
-//        if(d<0){
-//            cout << "EHHE\n";
-//            return -1;
-//        }
-//        d = sqrt(d);
-//        t1 = (-b-d)/(2*a);
-//        t2 = (-b+d)/(2*a);
-//        if(t1>0)return t1;
-//        if(t2>0)return t2;
-//        cout << "Here\n" << "t1: " << t1 << " t2: " << t2 << endl;
-//        return -1;
-    }
     }
 
     void print(){
@@ -453,15 +500,16 @@ public:
         this->type = "triangle";
     }
 
-    Ray getNormal(Point point, Ray L){
+    Ray getNormal(Point p, Ray r){
 
         Point dir = (this->p2 - this->p1).cross_mult(this->p3 - this->p1);
         dir = dir.normalize();
-        if(L.dir.negate_()*dir >0){
-            return Ray(point, dir);
+        if(r.dir.negate_()*dir >0){
+            return Ray(p, dir);
         }
-        return Ray(point, dir.negate_());
+        return Ray(p, dir.negate_());
     }
+
     double intersect(Ray ray, Color *color, int level){
 
         double BaseMatrix[3][3];
@@ -531,9 +579,56 @@ public:
 
 
         ///RTX ON
-        for(int i = 0; i<pointLights.size(); i++){
-            Ray L = Ray(pointLights[i].light_pos, intersectionPoint - (pointLights[i].light_pos)); ///Incident Ray
-            Ray N = getNormal(intersectionPoint, L);
+        for(int i = 0; i<pointLights.size()+ spotLights.size(); i++){
+
+            Color LightColor;
+            Ray L = Ray(Point(-10, -10, -10), Point(-5, -5, -5));
+
+
+            ///spotlight
+            if(i>=pointLights.size()){
+
+                int idx = i - pointLights.size();
+
+                PointLight PL = spotLights[idx].point_light;
+                L.start = PL.light_pos;
+                L.dir = intersectionPoint - PL.light_pos;
+                L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
+                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
+
+                double angle = acos(L.dir*spotLights[idx].light_direction);
+//                logfile << "Angle in radian? " << angle << endl;
+                angle = angle * (180/pi); ///making radian into degree
+//                logfile << "Angle in degree? " << angle << endl;
+                if(angle > spotLights[idx].cutoff_angle){
+//                    logfile << "Angle: " << angle << endl;
+                    continue;
+                }
+//                logfile << "Valid angle: " << angle << endl;
+                LightColor.r = PL.color.r;
+                LightColor.g = PL.color.g;
+                LightColor.b = PL.color.b;
+
+
+
+
+            }
+
+            ///pointlight
+            else {
+                L.start = pointLights[i].light_pos;///Incident Ray
+                L.dir = intersectionPoint - (pointLights[i].light_pos);
+                L.dir = L.dir.normalize();
+
+                LightColor.r = pointLights[i].color.r;
+                LightColor.g = pointLights[i].color.g;
+                LightColor.b = pointLights[i].color.b;
+
+
+            }
+
+
+            Ray N = getNormal(intersectionPoint, ray);
             Ray R = Ray(intersectionPoint, L.dir - N.dir*(L.dir*N.dir)*2);///Reflected
 //            L.draw();
             ///shadow check
@@ -565,18 +660,52 @@ public:
 //            logfile << "N dir: " << N.dir << endl;
             double lambert = (L.dir*(-1.0))*N.dir;
 //            logfile << "Lambert lambert what a prick: " << lambert << endl;
-            if(lambert > 0.0)logfile << "Lambert lambert what a prick triangle: " << lambert << endl;
-            color->r += pointLights[i].color.r*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.r;
-            color->g += pointLights[i].color.g*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.g;
-            color->b += pointLights[i].color.b*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.b;
+//            if(lambert > 0.0)logfile << "Lambert lambert what a prick triangle: " << lambert << endl;
+
+            color->r += LightColor.r*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.b;
 
             double phongValue = max(0.0, (ray.dir.negate_())*(R.dir));
-            if(phongValue > 0.0)logfile << "Phonging triangle: " << phongValue<< endl;
-            color->r += pointLights[i].color.r*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.r;
-            color->g += pointLights[i].color.g*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.g;
-            color->b += pointLights[i].color.b*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.b;
+//            if(phongValue > 0.0)logfile << "Phonging triangle: " << phongValue<< endl;
+            color->r += LightColor.r*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.b;
 
         }
+
+
+        if(level >=recursion_level)return t;
+        ///recursive reflection .-.
+
+        Ray N = getNormal(intersectionPoint, ray);
+        Ray reflected = Ray(intersectionPoint, ray.dir - N.dir*(ray.dir*N.dir)*2);
+        reflected.start = reflected.start + reflected.dir*epsilon;
+
+        int nearest = -INF;
+        double t_ref,tmin_ref = INF;
+
+        for(int k = 0; k<objects.size(); k++){
+
+            t_ref = objects[k]->intersect(reflected, color, 0);
+            if(t_ref > 0 && t_ref<tmin_ref){
+                tmin_ref = t_ref;
+                nearest = k;
+            }
+
+        }
+
+        if(nearest != -INF){
+            Color *reflectionColor = new Color();
+            tmin_ref = objects[nearest]->intersect(reflected, reflectionColor, level+1);
+
+            color->r += reflectionColor->r*this->coEfficients[3];
+            color->g += reflectionColor->g*this->coEfficients[3];
+            color->b += reflectionColor->b*this->coEfficients[3];
+
+        }
+
+
         return t;
 
     }
@@ -624,18 +753,19 @@ public:
 
     }
 
-    bool ClipCheck(Point p){
+    bool ClipCheck(Ray r, double t){
 
-        if(p.x < this->center.x)return false;
-        if(p.y < this->center.y)return false;
-        if(p.y < this->center.y)return false;
+        Point p = r.start + r.dir*t;
 
-        if(fabs(this->length) > epsilon && p.x > (this->center.x+this->length))return false;
-        if(fabs(this->width) > epsilon && p.y > (this->center.y+this->width))return false;
-        if(fabs(this->height) > epsilon && p.z > (this->center.z+this->height))return false;
+        if(fabs(length) > epsilon && (p.x < center.x || p.x > center.x+length))return false;
+        if(fabs(width) > epsilon && (p.y < center.y || p.y > center.y+width))return false;
+        if(fabs(height) > epsilon && (p.z < center.z || p.z > center.z+height)) return false;
+
 
         return true;
     }
+
+
     double intersect(Ray ray, Color *color, int level){
 
         ///source: http://skuld.bmsc.washington.edu/people/merritt/graphics/quadrics.html
@@ -648,31 +778,25 @@ public:
 
         double t, t0, t1;
 
-        if(Aq == 0){
-            t = -Cq/Bq;
-            if(t < 0 ) return -1;
-        }
+//        if(Aq == 0){
+//            t = -Cq/Bq;
+//            if(t < 0 ) return -1;
+//        }
 
-        else{
+//        else{
             double discriminant = Bq*Bq - 4*Aq*Cq;
             if(discriminant < 0.0){return -1;}
             t0 = (-Bq-sqrt(discriminant))/ (2*Aq);
             t1 = (-Bq+sqrt(discriminant))/ (2*Aq);
-            if(t0 > 0.0){t = t0;}
-            else if(t1 > 0.0){
-                t=t1;
+            if(t0 < 0 && t1 < 0){
+                return -1;
             }
-            else{
-                    return -1;
-                }
-        }
+            if(t0 > 0.0 && ClipCheck(ray, t0)){t = t0;}
+            else if(t1 > 0.0 && ClipCheck(ray, t1)){t=t1;}
+            else{return -1;}
+//        }
 
         ///clip
-
-        Point p = ray.start + ray.dir*t;
-        if(!ClipCheck(p)){
-            return -1;
-        }
 
         if(level == 0) return t;
 
@@ -685,11 +809,132 @@ public:
         color->g = intersectionPointColor.g*coEfficients[0]; ///ambient
         color->b = intersectionPointColor.b*coEfficients[0]; ///ambient
 
+        double x = intersectionPoint.x, y = intersectionPoint.y, z = intersectionPoint.z;
+        Point normalDirection(2*A*x + D*y + E*z + G, 2*B*y + D*x + F*z + H, 2*C*z + E*x + F*y + I);
+        Ray N(intersectionPoint, normalDirection); ///Normal Ray
+
+
+        for(int i = 0; i<pointLights.size(); i++){
+
+            Color LightColor;
+            Ray L = Ray(Point(-10, -10, -10), Point(-5, -5, -5));
+
+            ///spotlight
+            if(i>=pointLights.size()){
+
+                int idx = i - pointLights.size();
+
+                PointLight PL = spotLights[idx].point_light;
+                L.start = PL.light_pos;
+                L.dir = intersectionPoint - PL.light_pos;
+                L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
+                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
+
+                double angle = acos(L.dir*spotLights[idx].light_direction);
+//                logfile << "Angle in radian? " << angle << endl;
+                angle = angle * (180/pi); ///making radian into degree
+//                logfile << "Angle in degree? " << angle << endl;
+                if(angle > spotLights[idx].cutoff_angle){
+//                    logfile << "Angle: " << angle << endl;
+                    continue;
+                }
+//                logfile << "Valid angle: " << angle << endl;
+                LightColor.r = PL.color.r;
+                LightColor.g = PL.color.g;
+                LightColor.b = PL.color.b;
+
+            }
+
+            ///pointlight
+            else {
+                L.start = pointLights[i].light_pos;///Incident Ray
+                L.dir = intersectionPoint - (pointLights[i].light_pos);
+                L.dir = L.dir.normalize();
+
+                LightColor.r = pointLights[i].color.r;
+                LightColor.g = pointLights[i].color.g;
+                LightColor.b = pointLights[i].color.b;
+
+
+            }
+
+
+            Ray R = Ray(intersectionPoint, L.dir - N.dir*(L.dir*N.dir)*2);///Reflected
+            ///shadow check
+             double t, tmin =INF;
+
+            for(int j=0; j<objects.size(); j++) {
+
+                t = objects[j]->intersect(L, new Color(), 0);
+
+                if(t>0.0 && t<tmin) {
+                    tmin = t;
+                }
+            }
+
+            Point shadowIntersection = L.start + (L.dir*tmin);
+
+            double actual_distance = intersectionPoint.getDistance(L.start); ///distance between intersection and light source
+            double shadow_distance = shadowIntersection.getDistance(L.start);
+
+            if((actual_distance - epsilon) > shadow_distance){
+                ///actual intersection is in shadow so ignore diffuse and specular
+//                logfile << "actual intersection is in shadow so ignore diffuse and specular\n";
+                continue;
+            }
+
+            double lambert = (L.dir*(-1.0))*N.dir;
+
+//            if(lambert > 0.0)logfile << "Lambert lambert what a prick triangle: " << lambert << endl;
+            color->r += LightColor.r*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.b;
+
+            double phongValue = max(0.0, (ray.dir.negate_())*(R.dir));
+//            if(phongValue > 0.0)logfile << "Phonging triangle: " << phongValue<< endl;
+            color->r += LightColor.r*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.b;
+
+        }
+
+
+        if(level >=recursion_level)return t;
+        ///recursive reflection .-.
+
+        Ray reflected = Ray(intersectionPoint, ray.dir - N.dir*(ray.dir*N.dir)*2);
+        reflected.start = reflected.start + reflected.dir*epsilon;
+
+        int nearest = -INF;
+        double t_ref,tmin_ref = INF;
+
+        for(int k = 0; k<objects.size(); k++){
+
+            t_ref = objects[k]->intersect(reflected, color, 0);
+            if(t_ref > 0 && t_ref<tmin_ref){
+                tmin_ref = t_ref;
+                nearest = k;
+            }
+
+        }
+
+        if(nearest != -INF){
+            Color *reflectionColor = new Color();
+            tmin_ref = objects[nearest]->intersect(reflected, reflectionColor, level+1);
+
+            color->r += reflectionColor->r*this->coEfficients[3];
+            color->g += reflectionColor->g*this->coEfficients[3];
+            color->b += reflectionColor->b*this->coEfficients[3];
+
+        }
+
+
         return t;
 
 
 
     }
+
     void draw(){
 //        cout << "can't draw weird shapes yet\n";
         return;
@@ -715,10 +960,10 @@ public:
         this->tileWidth = tileWidth;
         this->type = "floor";
         this->coEfficients[0] = 0.4;
-        this->coEfficients[1] = 0.5;
-        this->coEfficients[2] = 0.1;
-        this->coEfficients[3] = 0.1;
-        this->shine = 10;
+        this->coEfficients[1] = 0.2;
+        this->coEfficients[2] = 0.2;
+        this->coEfficients[3] = 0.2;
+        this->shine = 20;
     }
 
     void draw(){
@@ -759,6 +1004,18 @@ public:
 
 
     }
+
+    Ray getNormal(Point p, Ray r){
+
+        Ray N(p, Point(0, 0, 1));
+        if(r.start.z<=0){
+            N.dir.z = -1;
+        }
+
+        return N;
+
+    }
+
     double intersect(Ray ray, Color *color, int level){
 
         Point n(0, 0, 1);
@@ -788,16 +1045,57 @@ public:
         color->b = intersectionPointColor.b*coEfficients[0]; ///ambient
 
         ///RTX ON
+        Ray N = getNormal(intersectionPoint, ray);
 
-        for(int i = 0; i<pointLights.size(); i++){
-            Ray L = Ray(pointLights[i].light_pos, intersectionPoint - (pointLights[i].light_pos)); ///Incident Ray
-            Ray N(intersectionPoint, Point(0, 0, 1));
-            if(ray.start.z<=0){
-                N.dir.z = -1;
+        for(int i = 0; i<pointLights.size()+spotLights.size(); i++){
+            Color LightColor;
+            Ray L = Ray(Point(-10, -10, -10), Point(-5, -5, -5));
+
+
+            ///spotlight
+            if(i>=pointLights.size()){
+
+                int idx = i - pointLights.size();
+
+                PointLight PL = spotLights[idx].point_light;
+                L.start = PL.light_pos;
+                L.dir = intersectionPoint - PL.light_pos;
+                L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
+                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
+
+                double angle = acos(L.dir*spotLights[idx].light_direction);
+//                logfile << "Angle in radian? " << angle << endl;
+                angle = angle * (180/pi); ///making radian into degree
+//                logfile << "Angle in degree? " << angle << endl;
+                if(angle > spotLights[idx].cutoff_angle){
+//                    logfile << "Angle: " << angle << endl;
+                    continue;
+                }
+//                logfile << "Valid angle: " << angle << endl;
+                LightColor.r = PL.color.r;
+                LightColor.g = PL.color.g;
+                LightColor.b = PL.color.b;
+
+
+
+
             }
-//            Ray N = getNormal(intersectionPoint, L);
+
+            ///pointlight
+            else {
+
+                L.start = pointLights[i].light_pos;///Incident Ray
+                L.dir = intersectionPoint - (pointLights[i].light_pos);
+                L.dir = L.dir.normalize();
+
+                LightColor.r = pointLights[i].color.r;
+                LightColor.g = pointLights[i].color.g;
+                LightColor.b = pointLights[i].color.b;
+
+
+            }
+
             Ray R = Ray(intersectionPoint, L.dir - N.dir*(L.dir*N.dir)*2);///Reflected
-//            L.draw();
             ///shadow check
              double t, tmin =INF;
 
@@ -828,17 +1126,47 @@ public:
             double lambert = (L.dir*(-1.0))*N.dir;
 //            logfile << "Lambert lambert what a prick: " << lambert << endl;
 //            if(lambert > 0.0)logfile << "Lambert lambert what a prick triangle: " << lambert << endl;
-            color->r += pointLights[i].color.r*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.r;
-            color->g += pointLights[i].color.g*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.g;
-            color->b += pointLights[i].color.b*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.b;
+            color->r += LightColor.r*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[1]*max(0.0, lambert)*intersectionPointColor.b;
 
             double phongValue = max(0.0, (ray.dir.negate_())*(R.dir));
 //            if(phongValue > 0.0)logfile << "Phonging triangle: " << phongValue<< endl;
-            color->r += pointLights[i].color.r*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.r;
-            color->g += pointLights[i].color.g*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.g;
-            color->b += pointLights[i].color.b*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.b;
+            color->r += LightColor.r*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.r;
+            color->g += LightColor.g*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.g;
+            color->b += LightColor.b*this->coEfficients[2]*pow(phongValue, this->shine)*intersectionPointColor.b;
 
         }
+
+        if(level >=recursion_level)return t;
+        ///recursive reflection .-.
+
+        Ray reflected = Ray(intersectionPoint, ray.dir - N.dir*(ray.dir*N.dir)*2);
+        reflected.start = reflected.start + reflected.dir*epsilon;
+
+        int nearest = -INF;
+        double t_ref,tmin_ref = INF;
+
+        for(int k = 0; k<objects.size(); k++){
+
+            t_ref = objects[k]->intersect(reflected, color, 0);
+            if(t_ref > 0 && t_ref<tmin_ref){
+                tmin_ref = t_ref;
+                nearest = k;
+            }
+
+        }
+
+        if(nearest != -INF){
+            Color *reflectionColor = new Color();
+            tmin_ref = objects[nearest]->intersect(reflected, reflectionColor, level+1);
+
+            color->r += reflectionColor->r*this->coEfficients[3];
+            color->g += reflectionColor->g*this->coEfficients[3];
+            color->b += reflectionColor->b*this->coEfficients[3];
+
+        }
+
 
         return t;
 

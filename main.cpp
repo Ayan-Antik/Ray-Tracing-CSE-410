@@ -58,7 +58,7 @@ void drawGrid()
 	}
 }
 
-int recursion_level, imageWidth, imageHeight, object_count;
+int imageWidth, imageHeight, object_count;
 string type_of_object;
 
 void loadData(){
@@ -150,6 +150,10 @@ void loadData(){
                     temp->setColor(color);
                     temp->setCoEfficients(a, d, sp, rc);
                     temp->setShine(shine);
+                    temp->center = Point(point.x, point.y, point.z);
+                    temp->length = length;
+                    temp->width = width;
+                    temp->height = height;
 //                    temp->print();
                     objects.push_back(temp);
 //                    break;
@@ -200,6 +204,8 @@ void loadData(){
                 PointLight pl(light_position, color);
                 ifile >> light_dir.x >> light_dir.y >> light_dir.z;
                 ifile >> angle;
+
+                light_dir = light_dir.normalize();
                 SpotLight sl(pl, light_dir, angle);
 //                sl.print();
                 spotLights.push_back(sl);
