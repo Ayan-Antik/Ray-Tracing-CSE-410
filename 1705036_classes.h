@@ -336,7 +336,7 @@ public:
 
         double t, t1, t2;
 
-        double ld = (ray.start*(-1.0)) * ray.dir.normalize();
+        double ld = (ray.start*(-1.0)) * ray.dir;
 
         if(ld < 0)return -1.0;
         double d_sq = (ray.start*ray.start) - ld*ld;
@@ -411,8 +411,9 @@ public:
 
             for(int j=0; j<objects.size(); j++) {
 
-                t = objects[j]->intersect(L, new Color(), 0);
-
+                Color *dummy = new Color();
+                t = objects[j]->intersect(L, dummy, 0);
+                delete dummy;
                 if(t>0.0 && t<tmin) {
                     tmin = t;
                 }
@@ -468,7 +469,7 @@ public:
             color->r += reflectionColor->r*this->coEfficients[3];
             color->g += reflectionColor->g*this->coEfficients[3];
             color->b += reflectionColor->b*this->coEfficients[3];
-
+            delete reflectionColor;
 
         }
 
@@ -633,9 +634,9 @@ public:
              double t, tmin =INF;
 
             for(int j=0; j<objects.size(); j++) {
-
-                t = objects[j]->intersect(L, new Color(), 0);
-
+                Color *dummy = new Color();
+                t = objects[j]->intersect(L, dummy, 0);
+                delete dummy;
                 if(t>0.0 && t<tmin) {
                     tmin = t;
                 }
@@ -700,7 +701,7 @@ public:
             color->r += reflectionColor->r*this->coEfficients[3];
             color->g += reflectionColor->g*this->coEfficients[3];
             color->b += reflectionColor->b*this->coEfficients[3];
-
+            delete reflectionColor;
         }
 
 
@@ -861,9 +862,9 @@ public:
              double t, tmin =INF;
 
             for(int j=0; j<objects.size(); j++) {
-
-                t = objects[j]->intersect(L, new Color(), 0);
-
+                Color *dummy = new Color();
+                t = objects[j]->intersect(L, dummy, 0);
+                delete dummy;
                 if(t>0.0 && t<tmin) {
                     tmin = t;
                 }
@@ -922,7 +923,7 @@ public:
             color->r += reflectionColor->r*this->coEfficients[3];
             color->g += reflectionColor->g*this->coEfficients[3];
             color->b += reflectionColor->b*this->coEfficients[3];
-
+            delete reflectionColor;
         }
 
 
@@ -1096,9 +1097,9 @@ public:
              double t, tmin =INF;
 
             for(int j=0; j<objects.size(); j++) {
-
-                t = objects[j]->intersect(L, new Color(), 0);
-
+                Color *dummy = new Color();
+                t = objects[j]->intersect(L, dummy, 0);
+                delete dummy;
                 if(t>0.0 && t<tmin) {
                     tmin = t;
                 }
@@ -1160,6 +1161,8 @@ public:
             color->r += reflectionColor->r*this->coEfficients[3];
             color->g += reflectionColor->g*this->coEfficients[3];
             color->b += reflectionColor->b*this->coEfficients[3];
+
+            delete reflectionColor;
 
         }
 
