@@ -4,12 +4,6 @@ int drawgrid;
 int drawaxes;
 double angle;
 
-//vector <Object*> objects = objects;
-//vector <PointLight> pointLights = pointLights;
-//vector <SpotLight> spotLights = spotLights;
-
-
-
 int windowHeight = 500;
 int windowWidth = 500;
 double viewAngle = 80;
@@ -285,6 +279,8 @@ void capture(){
                 color->clip();
                 image.set_pixel(i, j, round(color->r * 255), round(color->g * 255), round(color->b * 255));
             }
+
+            delete color;
         }
 
 
@@ -307,32 +303,23 @@ void keyboardListener(unsigned char key, int x,int y){
 
         case '1':
 
-//            l = l*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
-//            r = r*(cos(-2*pi/180)) + l.cross_mult(u)*(sin(-2*pi/180));
-
             r = r*cos(pi/180)+(u.cross_mult(r))*sin(pi/180);
 		    l = l*cos(pi/180)+(u.cross_mult(l))*sin(pi/180);
 
 			break;
 
         case '2':
-//            l = l*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
-//            r = r*(cos(2*pi/180)) + l.cross_mult(u)*(sin(2*pi/180));
             r = r*cos(-pi/180)+(u.cross_mult(r))*sin(-pi/180);
 		    l = l*cos(-pi/180)+(u.cross_mult(l))*sin(-pi/180);
 
 			break;
 
         case '3':
-//            l = l*(cos(2*pi/180)) + r.cross_mult(l)*(sin(2*pi/180));
-//            u = u*(cos(2*pi/180)) + r.cross_mult(u)*(sin(2*pi/180));
             l = l*cos(pi/180)+(r.cross_mult(l))*sin(pi/180);
 		    u = u*cos(pi/180)+(r.cross_mult(u))*sin(pi/180);
 			break;
 
         case '4':
-//            l = l*(cos(-2*pi/180)) + r.cross_mult(l)*(sin(-2*pi/180));
-//            u = u*(cos(-2*pi/180)) + r.cross_mult(u)*(sin(-2*pi/180));
 
             l = l*cos(-pi/180)+(r.cross_mult(l))*sin(-pi/180);
 		    u = u*cos(-pi/180)+(r.cross_mult(u))*sin(-pi/180);
@@ -368,12 +355,11 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_UP:		// up arrow key
-//            eye.x -= 2.0;
-//            eye.y -= 2.0;
             eye.x += l.x*2;
             eye.y += l.y*2;
             eye.z += l.z*2;
 			break;
+
 		case GLUT_KEY_DOWN:		//down arrow key
             eye.x -= l.x*2;
             eye.y -= l.y*2;
@@ -535,7 +521,6 @@ void init(){
 	//near distance
 	//far distance
 }
-//goto function: ctrl-shift-g
 
 
 
@@ -545,7 +530,7 @@ int main(int argc, char **argv){
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 
-	glutCreateWindow("Ray Tracing");
+	glutCreateWindow("RTX On");
 
 	init();
 
@@ -560,6 +545,11 @@ int main(int argc, char **argv){
 	glutMouseFunc(mouseListener);
 
 	glutMainLoop();		//The main loop of OpenGL
+
+    for(int i = 0; i<objects.size(); i++){
+        delete objects[i];
+    }
+
 
 	return 0;
 }

@@ -293,8 +293,7 @@ public:
 
         glPushMatrix();
         glTranslatef(center.x, center.y, center.z);
-    //    glColor3f(1,0,0);
-        //generate points
+
         for(i=0;i<=stacks;i++)
         {
             h=length*sin(((double)i/(double)stacks)*(pi/2));
@@ -374,7 +373,7 @@ public:
                 L.start = PL.light_pos;
                 L.dir = intersectionPoint - PL.light_pos;
                 L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
-                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
+
                 double angle = acos(L.dir*spotLights[idx].light_direction);
 //                logfile << "Angle in radian? " << angle << endl;
                 angle = angle * (180/pi); ///making radian into degree
@@ -402,7 +401,6 @@ public:
                 LightColor.r = pointLights[i].color.r;
                 LightColor.g = pointLights[i].color.g;
                 LightColor.b = pointLights[i].color.b;
-
 
             }
 
@@ -470,6 +468,7 @@ public:
             color->r += reflectionColor->r*this->coEfficients[3];
             color->g += reflectionColor->g*this->coEfficients[3];
             color->b += reflectionColor->b*this->coEfficients[3];
+
 
         }
 
@@ -594,7 +593,6 @@ public:
                 L.start = PL.light_pos;
                 L.dir = intersectionPoint - PL.light_pos;
                 L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
-                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
 
                 double angle = acos(L.dir*spotLights[idx].light_direction);
 //                logfile << "Angle in radian? " << angle << endl;
@@ -828,7 +826,6 @@ public:
                 L.start = PL.light_pos;
                 L.dir = intersectionPoint - PL.light_pos;
                 L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
-                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
 
                 double angle = acos(L.dir*spotLights[idx].light_direction);
 //                logfile << "Angle in radian? " << angle << endl;
@@ -959,11 +956,11 @@ public:
         this->floorWidth = floorWidth;
         this->tileWidth = tileWidth;
         this->type = "floor";
-        this->coEfficients[0] = 0.4;
+        this->coEfficients[0] = 0.6;
         this->coEfficients[1] = 0.2;
         this->coEfficients[2] = 0.2;
         this->coEfficients[3] = 0.2;
-        this->shine = 20;
+        this->shine = 5;
     }
 
     void draw(){
@@ -999,8 +996,8 @@ public:
         int j = ceil(p.y/tileWidth);
         Color black(0, 0, 0);
         Color white(1, 1, 1);
-        if((i+j) % 2)return white;
-        else return black;
+        if((i+j) % 2)return black;
+        else return white;
 
 
     }
@@ -1061,7 +1058,6 @@ public:
                 L.start = PL.light_pos;
                 L.dir = intersectionPoint - PL.light_pos;
                 L.dir = L.dir.normalize();///POINT LIGHT'S DIRECTION. NEED TO DOT THIS WITH SPOTLIGHT DIR
-                spotLights[idx].light_direction = spotLights[idx].light_direction.normalize();
 
                 double angle = acos(L.dir*spotLights[idx].light_direction);
 //                logfile << "Angle in radian? " << angle << endl;
